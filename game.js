@@ -1,7 +1,17 @@
 var input = require('readline-sync')
 var wordDB = require('./dictionary.json')
+var fs = require('fs');
+var userData = {}
 
-
+// Importing the JSON file that contains the Word and definition
+/*
+url: https://github.com/matthewreagan/WebstersEnglishDictionary
+Original repository and Julia script provided by https://github.com/adambom/dictionary
+Webster's Unabridged English Dictionary provided by Project Gutenberg
+The original dictionary text file is covered by The Gutenberg Project's licensing,
+please see the file headers for more details.
+The Swift parsing tool and example output files in this repository are free and distributed under the GNU General Public License, Version 2.
+*/
 
 class Word{
     constructor(word, definition){
@@ -135,7 +145,7 @@ class Player {
         var abilityOneUse = (this.abilityPoint[0] == 0) ? "[Used]" : "[Available]"
         var abilityTwoUse = (this.abilityPoint[1] == 0) ? "[Used]" : "[Available]"
         var abilityThreeUse = (this.abilityPoint[2] == 0) ? "[Used]" : "[Available]"
-        console.log(`Your abilities are:\n1. Show all vowels\t${abilityOneUse}\n2. Show word definition\t${abilityTwoUse}\n3. Skip the word and move on\t${abilityThreeUse}`)
+        console.log(`Your abilities are:\n1. Show all vowels\t${abilityOneUse}\n2. Show word definition\t${abilityTwoUse}\n3. Skip the word and move on\t${abilityThreeUse}\n4. Back`)
         var abilityChoice = input.questionInt("> ")
         switch (abilityChoice){
             case 1:
@@ -154,13 +164,28 @@ class Player {
 
 
 
+function leaderBoard(){
+    let rawData = fs.readFileSync("leaderBoard.json")
+    let players = JSON.parse(rawData)
+    for (var player in players){
+        console.log("JSON content: " + player)
+        
+    }
+}
 
 
-
-
-
-
-
+function saveData(){
+    var dataName = player.name
+    var dataScore = player.Hscore
+    userData = {
+        dataName : dataScore,
+    }
+    var dictStr = JSON.stringify(userData)
+    fs.writeFile("leaderBoard.json", dictStr, function (err, result) {
+        if (err) console.log('error', err);
+    });
+    console.log('Data successfully saved...')
+}
 
 
 
@@ -194,7 +219,6 @@ function lost(WORD) {
     console.log('\n\n\n\n\n=========\nGame Over\n=========\n')
     console.log(`The word was: ${WORD.word}.`)
 
-    // player.score += 1000
     console.log(`Your Final Score is: ${player.score}`)
     player.checkHscore()
 }
@@ -301,6 +325,9 @@ function game(WORD) {
 
         // Input control to get input from player
         var choice = input.question(`${player.name}'s guess (Type 0 to exit or 1 for special abilities)\t`)
+
+        // Using Regular Expression to test input to filter out unwanted inputs.
+        var regalpha = /^[A-Za-z]+$/
         var reg = /^\d+$/
         if (reg.test(choice)) {
             // check if player wants to quit the game
@@ -309,29 +336,51 @@ function game(WORD) {
             }
             // Leads to the abilities function
             else if (choice == '1') {
-                // console.log(`What is: ${typeof WORD}`)
-                // console.log(WORD.getVowels())
+                // Will direct to player Class to handle the picking of the relevant abilities
                 var abilityChoice = player.abilities()
                 if (abilityChoice == "vowels"){
-                    player.abilityPoint[0] = 0
-                    console.log(WORD.getVowels())
+                    if (player.abilityPoint[0] == 0){
+                        console.log('You have used this ability already.')
+                        
+                    }
+                    else{
+                        player.abilityPoint[0] = 0
+                        console.log(WORD.getVowels())
+                    }
+                    
                 }
                 else if (abilityChoice == "define"){
-                    player.abilityPoint[1] = 0
-                    console.log(WORD.def)
+                    if (player.abilityPoint[1] == 0) {
+                        console.log('You have used this ability already.')
+
+                    }
+                    else{
+                        player.abilityPoint[1] = 0
+                        console.log(WORD.def)
+                    }
+                    
                 }
                 else if (abilityChoice == "skip"){
-                    player.abilityPoint[2] = 0
-                    console.log(WORD.def)
+                    if (player.abilityPoint[2] == 0) {
+                        console.log('You have used this ability already.')
+
+                    }
+                    else{
+                        player.abilityPoint[2] = 0
+                        for (var char = 0; char < WORD.word.length; char++) {
+                            guessedWords.push(WORD.word[char].toUpperCase())
+                        }
+                    }
+                    
                 }
                 else{
                     console.log(abilityChoice)
                     
-                }
+                } 
             }
         }
-
-        else {
+        
+        else if (regalpha.test(choice) && (choice.length < 2)){
             // Checking the player's guess
             if (!(WORD.word.includes(choice.toUpperCase()))) {
                 guesses -= 1
@@ -351,7 +400,7 @@ function game(WORD) {
             // Check if word is fully guessed
             if (!(WORD.showBlanks(pos).includes("_"))) {
                 console.log('\n\n********************************\nYou have guessed the whole word!\n********************************n\n')
-                player.wins(WORD.length)
+                player.wins(WORD.word.length)
                 round += 1
                 return "win"
             }
@@ -365,6 +414,7 @@ function game(WORD) {
 
 var player = new Player()
 function main(){
+    // leaderBoard()
     // Initialize a new wordCollection at the start of the game
     var gameplay = new WordCollection()
     console.log(gameplay.loadWords())
@@ -383,8 +433,14 @@ function main(){
             lost(listOfWords[word])
             break
         }
+        else if (gameStatus == 'win'){
+            console.log("Congrats! You've won!!")
+            player.checkHscore()
+            console.log(`Your Final Score is: ${player.score}`)
+        }
         // player.win()
     }
+    saveData()
     // console.log(gameplay.getWords())
     
 }
@@ -396,3 +452,4 @@ function main(){
 
 
 main()
+
