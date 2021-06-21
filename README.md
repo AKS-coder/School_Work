@@ -1,4 +1,4 @@
-# School_Work
+# St0502 Fundamentals of Programming Assignment
 
 ## Javascript text-based Hangman Game using Node.js
 
